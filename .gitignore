@@ -1,0 +1,13 @@
+.DS_Store
+__pycache__/
+.venv/
+node_modules/
+*.pyc
+data/raw/
+data/videos/
+*.mov
+*.mp4
+.env
+.env.*
+xcuserdata/
+DerivedData/
