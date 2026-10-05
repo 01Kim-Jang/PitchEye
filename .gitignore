@@ -11,3 +11,6 @@ data/videos/
 .env.*
 xcuserdata/
 DerivedData/
+
+# Claude Code 로컬 도구 (각자 설치)
+.claude/
