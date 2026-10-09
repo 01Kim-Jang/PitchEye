@@ -22,7 +22,8 @@ struct FormatInfo: Identifiable {
 }
 
 enum DeviceProbe {
-    /// 예: "iPhone18,3". 기종명 대신 식별자를 그대로 보여준다(매핑표를 유지하지 않기 위해).
+    /// Apple 내부 모델 코드. 예: "iPhone18,3"은 iPhone 17이다(숫자가 제품명과 다르다).
+    /// 매핑표를 유지하지 않으려고 코드를 그대로 쓰되, 화면에는 반드시 "모델 코드"라고 표기한다.
     static var modelIdentifier: String {
         var info = utsname()
         uname(&info)

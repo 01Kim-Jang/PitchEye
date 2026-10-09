@@ -37,7 +37,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(supported ? "이 기기는 1080p 240fps를 지원합니다" : "이 기기는 1080p 240fps를 지원하지 않습니다")
                     .font(.headline)
-                Text("\(DeviceProbe.modelIdentifier) · \(DeviceProbe.osVersion)")
+                Text("모델 코드 \(DeviceProbe.modelIdentifier) · \(DeviceProbe.osVersion)")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -168,7 +168,7 @@ struct ContentView: View {
 
     private var report: String {
         (["PitchEye 240fps 캡처 점검",
-          "기기: \(DeviceProbe.modelIdentifier) / \(DeviceProbe.osVersion)",
+          "모델 코드: \(DeviceProbe.modelIdentifier) / \(DeviceProbe.osVersion)",
           "포맷: \(capture.activeFormat)"]
             + capture.records.map { "\($0.label) (\(clock($0.stats.elapsed))): \(summary($0))" })
             .joined(separator: "\n")
