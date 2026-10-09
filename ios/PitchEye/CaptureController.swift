@@ -1,5 +1,14 @@
 import AVFoundation
 import Combine
+import UIKit
+
+/// 측정 중 특정 시점의 결과. 화면을 캡처하지 않아도 기록이 남는다.
+struct MeasurementRecord: Identifiable {
+    let id = UUID()
+    let label: String
+    let stats: FrameStats
+    let thermal: ProcessInfo.ThermalState
+}
 
 /// 1080p@240fps로 프레임을 실시간으로 받아 실제 프레임 간격을 잰다.
 /// 파일 녹화가 아니라 프레임 콜백 방식이다(링버퍼·판정 파이프라인과 같은 경로).
@@ -9,12 +18,14 @@ final class CaptureController: NSObject, ObservableObject, AVCaptureVideoDataOut
     @Published var stats = FrameStats(fps: Requirements.fps)
     @Published var thermal = ProcessInfo.processInfo.thermalState
     @Published var activeFormat = "-"
+    @Published var records: [MeasurementRecord] = []
 
     let session = AVCaptureSession()
     private let sessionQueue = DispatchQueue(label: "pitcheye.session")
     private let frameQueue = DispatchQueue(label: "pitcheye.frames")
     private var liveStats = FrameStats(fps: Requirements.fps) // frameQueue에서만 접근
     private var configured = false
+    private var pendingCheckpoints: [Double] = [] // 초 단위, main에서만 접근
 
     func start() {
         AVCaptureDevice.requestAccess(for: .video) { granted in
@@ -27,6 +38,10 @@ final class CaptureController: NSObject, ObservableObject, AVCaptureVideoDataOut
                 DispatchQueue.main.async {
                     self.isRunning = true
                     self.status = "촬영 중"
+                    self.stats = FrameStats(fps: Requirements.fps)
+                    self.records = []
+                    self.pendingCheckpoints = [60, 600, 1800]
+                    UIApplication.shared.isIdleTimerDisabled = true // 측정 중 화면이 꺼지면 캡처가 멈춘다
                 }
             }
         }
@@ -40,6 +55,8 @@ final class CaptureController: NSObject, ObservableObject, AVCaptureVideoDataOut
                 self.stats = final
                 self.isRunning = false
                 self.status = "정지"
+                self.record("종료", final)
+                UIApplication.shared.isIdleTimerDisabled = false
             }
         }
     }
@@ -101,6 +118,14 @@ final class CaptureController: NSObject, ObservableObject, AVCaptureVideoDataOut
         DispatchQueue.main.async {
             self.stats = snapshot
             self.thermal = ProcessInfo.processInfo.thermalState
+            while let next = self.pendingCheckpoints.first, snapshot.elapsed >= next {
+                self.pendingCheckpoints.removeFirst()
+                self.record("\(Int(next / 60))분", snapshot)
+            }
         }
+    }
+
+    private func record(_ label: String, _ stats: FrameStats) {
+        records.append(MeasurementRecord(label: label, stats: stats, thermal: ProcessInfo.processInfo.thermalState))
     }
 }
