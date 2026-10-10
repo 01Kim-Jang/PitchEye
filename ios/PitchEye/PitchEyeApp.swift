@@ -10,7 +10,9 @@ struct PitchEyeApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            HomeView()
+                .preferredColorScheme(.light) // 야외 가독성을 위해 라이트 고정
+                .tint(Theme.text)
         }
     }
 }
