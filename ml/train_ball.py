@@ -1,14 +1,16 @@
 """공 검출 모델 학습과 평가.
 
 실행 예:
-    python train_ball.py --data ../data/raw/aihub/71726 --epochs 40
+    python train_ball.py --data ../data/raw/aihub/71726 --epochs 150
 
-학습은 공 주변을 원래 해상도로 잘라서(CROP px) 하고, 평가는 1920x1080 전체 이미지로 한다.
+학습은 공 주변을 잘라서(CROP px, 크기를 0.6~1.4배로 바꿔 가며) 하고, 평가는 1920x1080 전체 이미지로 한다.
 결과는 runs/<이름>/ 아래 model.pt, metrics.json으로 남는다.
+에폭마다 checkpoint.pt를 저장하므로, 중간에 꺼져도 같은 명령을 다시 실행하면 이어서 학습한다.
 """
 
 import argparse
 import json
+import os
 import random
 import statistics
 import time
@@ -23,7 +25,7 @@ from torchvision.transforms.functional import normalize, to_tensor
 from aihub import is_validation, load_samples
 from ball_model import MEAN, STD, BallNet, find_peaks, focal_loss, make_target
 
-CROP = 320
+CROP = 192  # M1에서 한 스텝 시간이 조각 넓이에 비례한다. 작게 잘라 같은 시간에 더 많이 학습한다.
 
 
 def to_input(image):
@@ -43,17 +45,20 @@ class CropDataset(Dataset):
         sample = self.samples[index]
         image = Image.open(sample.image).convert("RGB")
         width, height = image.size
-        if sample.balls and random.random() < 0.8:
+        scale = random.uniform(0.6, 1.4)  # 1보다 작으면 공이 더 작아진다 (작은 공 사례를 늘린다)
+        source = round(CROP / scale)  # 원본에서 잘라낼 한 변
+        if sample.balls and random.random() < 0.6:
             cx, cy, _ = random.choice(sample.balls)
-            margin = 24  # 공이 조각 가장자리에 걸리지 않게
-            left = int(cx) - random.randint(margin, CROP - margin)
-            top = int(cy) - random.randint(margin, CROP - margin)
+            margin = round(16 / scale)  # 공이 조각 가장자리에 걸리지 않게
+            left = int(cx) - random.randint(margin, source - margin)
+            top = int(cy) - random.randint(margin, source - margin)
         else:
-            left, top = random.randint(0, width - CROP), random.randint(0, height - CROP)
-        left = min(max(left, 0), width - CROP)
-        top = min(max(top, 0), height - CROP)
-        crop = image.crop((left, top, left + CROP, top + CROP))
-        balls = [(x - left, y - top, s) for x, y, s in sample.balls if 0 <= x - left < CROP and 0 <= y - top < CROP]
+            left, top = random.randint(0, width - source), random.randint(0, height - source)
+        left = min(max(left, 0), width - source)
+        top = min(max(top, 0), height - source)
+        crop = image.crop((left, top, left + source, top + source)).resize((CROP, CROP), Image.BILINEAR)
+        balls = [((x - left) * scale, (y - top) * scale, s * scale) for x, y, s in sample.balls
+                 if 0 <= x - left < source and 0 <= y - top < source]
 
         if random.random() < 0.5:
             crop = crop.transpose(Image.FLIP_LEFT_RIGHT)
@@ -68,7 +73,7 @@ def predict(model, sample, device):
     """전체 이미지에서 봉우리 [(x, y, 점수)]를 찾는다. 임계값 0.05로 넉넉히 뽑고 평가에서 거른다."""
     image = to_input(Image.open(sample.image).convert("RGB"))
     _, h, w = image.shape
-    image = F.pad(image, (0, -w % 8, 0, -h % 8))  # 8의 배수로
+    image = F.pad(image, (0, -w % 16, 0, -h % 16))  # 16의 배수로
     logits = model(image[None].to(device))[0, 0].cpu()
     return find_peaks(logits[: h // 2, : w // 2], threshold=0.05, max_peaks=5)
 
@@ -115,7 +120,7 @@ def evaluate(samples, predictions, threshold):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", required=True)
-    parser.add_argument("--epochs", type=int, default=40)
+    parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--name", default="ball")
@@ -140,8 +145,21 @@ def main():
                         persistent_workers=True)
     scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, max_lr=args.lr, total_steps=args.epochs * len(loader))
 
-    started = time.time()
-    for epoch in range(args.epochs):
+    out = Path("runs") / args.name
+    out.mkdir(parents=True, exist_ok=True)
+    checkpoint = out / "checkpoint.pt"
+    first_epoch, elapsed_before = 0, 0.0
+    if checkpoint.exists():
+        state = torch.load(checkpoint, map_location=device)
+        if state["epochs"] == args.epochs:  # 에폭 수가 다르면 학습률 일정이 달라지므로 처음부터 한다
+            model.load_state_dict(state["model"])
+            optimizer.load_state_dict(state["optimizer"])
+            scheduler.load_state_dict(state["scheduler"])
+            first_epoch, elapsed_before = state["epoch"], state["elapsed"]
+            print(f"{first_epoch}에폭까지 한 기록에서 이어서 학습합니다")
+
+    started = time.time() - elapsed_before
+    for epoch in range(first_epoch, args.epochs):
         model.train()
         total = 0.0
         for image, target in loader:
@@ -152,6 +170,10 @@ def main():
             scheduler.step()
             total += loss.item()
         print(f"epoch {epoch + 1}/{args.epochs} loss {total / len(loader):.4f} ({time.time() - started:.0f}s)", flush=True)
+        # 임시 파일에 쓰고 바꿔치기한다. 저장 도중 꺼져도 직전 기록이 남는다.
+        torch.save({"model": model.state_dict(), "optimizer": optimizer.state_dict(), "scheduler": scheduler.state_dict(),
+                    "epoch": epoch + 1, "epochs": args.epochs, "elapsed": time.time() - started}, out / "checkpoint.tmp")
+        os.replace(out / "checkpoint.tmp", checkpoint)
 
     model.eval()
     predictions = [predict(model, s, device) for s in val]
@@ -166,11 +188,10 @@ def main():
                                        [p for s, p in zip(val, predictions) if s.kind == k], 0.3)
                            for k in sorted({s.kind for s in val})},
     }
-    out = Path("runs") / args.name
-    out.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), out / "model.pt")
     (out / "metrics.json").write_text(json.dumps(result, ensure_ascii=False, indent=2))
     print(json.dumps(sweep, ensure_ascii=False, indent=1))
+    checkpoint.unlink(missing_ok=True)
     print("저장:", out)
 
 

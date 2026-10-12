@@ -22,11 +22,14 @@ def _block(cin, cout):
 class BallNet(nn.Module):
     def __init__(self, pretrained=True):
         super().__init__()
-        # ResNet-18의 앞부분만 쓴다(1/8 해상도까지). torchvision 코드는 BSD-3 라이선스.
+        # ResNet-18의 앞부분만 쓴다(1/16 해상도까지). torchvision 코드는 BSD-3 라이선스.
         net = resnet18(weights=ResNet18_Weights.DEFAULT if pretrained else None)
         self.stem = nn.Sequential(net.conv1, net.bn1, net.relu)  # 1/2, 64ch
         self.layer1 = nn.Sequential(net.maxpool, net.layer1)  # 1/4, 64ch
         self.layer2 = net.layer2  # 1/8, 128ch
+        # 1/16 단계는 주변 문맥용이다. 공과 비슷한 것(베이스, 흰 선)을 주변을 보고 가려내기 위해 넓게 본다.
+        self.layer3 = net.layer3  # 1/16, 256ch
+        self.up0 = _block(256 + 128, 128)
         self.up1 = _block(128 + 64, 64)
         self.up2 = _block(64 + 64, 32)
         self.head = nn.Conv2d(32, 1, 1)
@@ -36,7 +39,9 @@ class BallNet(nn.Module):
         s2 = self.stem(x)
         s4 = self.layer1(s2)
         s8 = self.layer2(s4)
-        y = self.up1(torch.cat([F.interpolate(s8, size=s4.shape[-2:], mode="nearest"), s4], 1))
+        s16 = self.layer3(s8)
+        y = self.up0(torch.cat([F.interpolate(s16, size=s8.shape[-2:], mode="nearest"), s8], 1))
+        y = self.up1(torch.cat([F.interpolate(y, size=s4.shape[-2:], mode="nearest"), s4], 1))
         y = self.up2(torch.cat([F.interpolate(y, size=s2.shape[-2:], mode="nearest"), s2], 1))
         return self.head(y)  # 로짓
 
