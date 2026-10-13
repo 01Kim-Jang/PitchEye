@@ -14,3 +14,6 @@ DerivedData/
 
 # Claude Code 로컬 도구 (각자 설치)
 .claude/
+
+# 학습 결과물 (가중치는 저장소에 올리지 않는다)
+ml/runs/
