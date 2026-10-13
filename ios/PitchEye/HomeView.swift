@@ -4,6 +4,7 @@ enum Route: Hashable {
     case guide(thenCapture: Bool)
     case capture
     case settings
+    case clips
 }
 
 struct HomeView: View {
@@ -20,7 +21,7 @@ struct HomeView: View {
                 if verticalSizeClass == .compact {
                     HStack(alignment: .center, spacing: 32) {
                         header.frame(maxWidth: .infinity, alignment: .leading)
-                        buttons.frame(maxWidth: 360)
+                        ScrollView(showsIndicators: false) { buttons }.frame(maxWidth: 360)
                     }
                 } else {
                     VStack(alignment: .leading, spacing: 0) {
@@ -43,6 +44,8 @@ struct HomeView: View {
                     CaptureView { path = [] }
                 case .settings:
                     SettingsView()
+                case .clips:
+                    ClipsView()
                 }
             }
             .alert("이 기기로는 촬영할 수 없습니다", isPresented: $showUnsupported) {
@@ -88,6 +91,13 @@ struct HomeView: View {
                 path = [.settings]
             } label: {
                 Label("촬영 설정", systemImage: "gearshape")
+            }
+            .buttonStyle(SecondaryButtonStyle())
+
+            Button {
+                path = [.clips]
+            } label: {
+                Label("저장한 영상", systemImage: "film")
             }
             .buttonStyle(SecondaryButtonStyle())
 

@@ -5,6 +5,7 @@ import SwiftUI
 struct CaptureView: View {
     let onDone: () -> Void
     @StateObject private var capture = CaptureController()
+    @State private var memo = ""
 
     private var finished: Bool { !capture.isRunning && !capture.records.isEmpty }
 
@@ -54,6 +55,11 @@ struct CaptureView: View {
                     tile("발열", capture.thermal.label)
                 }
             }
+            Text("노출 \(capture.exposure)")
+                .font(.caption)
+                .monospacedDigit()
+                .foregroundStyle(Theme.secondaryText)
+            recordControls
             if !capture.isRunning, capture.status != "대기" {
                 Text(capture.status).font(.footnote).foregroundStyle(Status.danger.foreground)
             }
@@ -63,6 +69,30 @@ struct CaptureView: View {
                 Label(capture.isRunning ? "촬영 끝내기" : "홈으로", systemImage: capture.isRunning ? "stop.fill" : "house")
             }
             .buttonStyle(SecondaryButtonStyle())
+        }
+    }
+
+    private var recordControls: some View {
+        VStack(spacing: 8) {
+            TextField("메모 (예: 3m)", text: $memo)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .padding(12)
+                .foregroundStyle(Theme.text)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Theme.border, lineWidth: 1))
+                .disabled(capture.isRecording)
+            Button {
+                capture.toggleRecording(memo: memo)
+            } label: {
+                Label(capture.isRecording ? "녹화 끝내기 (\(clock(capture.recordingSeconds)))" : "영상 녹화",
+                      systemImage: capture.isRecording ? "stop.circle.fill" : "record.circle")
+            }
+            .buttonStyle(PrimaryButtonStyle())
+            .disabled(!capture.isRunning)
+            Text(capture.clipMessage.isEmpty ? "최대 \(Int(ClipRecorder.maxSeconds))초까지 저장합니다." : capture.clipMessage)
+                .font(.caption)
+                .foregroundStyle(Theme.secondaryText)
+                .multilineTextAlignment(.center)
         }
     }
 
