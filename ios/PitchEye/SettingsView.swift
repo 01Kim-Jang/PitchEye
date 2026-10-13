@@ -3,6 +3,7 @@ import SwiftUI
 /// 지금 실제로 의미가 있는 설정만 둔다. 링버퍼 길이 등은 해당 기능을 만들 때 추가한다.
 struct SettingsView: View {
     @AppStorage("showGuideBeforeCapture") private var showGuide = true
+    @AppStorage("maxExposureDenominator") private var maxExposure = 0
     private let formats = DeviceProbe.highSpeedFormats()
     private let supported = DeviceProbe.requiredFormat() != nil
 
@@ -14,6 +15,23 @@ struct SettingsView: View {
                         .tint(Theme.text)
                         .padding(14)
                 }
+                section("노출") {
+                    HStack {
+                        Text("최대 노출 시간")
+                        Spacer()
+                        Picker("최대 노출 시간", selection: $maxExposure) {
+                            Text("자동").tag(0)
+                            ForEach([500, 1000, 2000, 4000], id: \.self) { Text("1/\($0)초").tag($0) }
+                        }
+                        .tint(Theme.text)
+                    }
+                    .padding(.leading, 14)
+                    .padding(.vertical, 4)
+                }
+                Text("짧을수록 빠른 공이 덜 번지지만 화면이 어두워지거나 거칠어집니다. 다음 촬영부터 적용됩니다.")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.secondaryText)
+                    .padding(.top, -16)
                 section("촬영 사양") {
                     row("해상도", "\(Requirements.width)×\(Requirements.height)")
                     divider
