@@ -101,6 +101,7 @@ iPhone 17에서 1080p@240fps 포맷을 앱이 쓸 수 있는 것을 확인했습
 | `trajectory.py` | 합성 투구 생성, 통과 지점 추정 |
 | `camera.py` | 카메라 투영, 화면 관측에서 3차원 궤적 복원 |
 | `experiment_monocular.py` | 카메라 1대 복원 오차 실험 |
+| `ball_size.py` | 공 크기 측정 실험 분석 (영상에서 공 지름과 치우침 측정) |
 | `aihub.py` | AI Hub 라벨 읽기 |
 | `ball_model.py` | 공 검출 모델 |
 | `train_ball.py` | 공 검출 학습과 평가 |
@@ -113,6 +114,7 @@ python3 -m venv .venv
 .venv/bin/python test_trajectory.py
 .venv/bin/python test_camera.py
 .venv/bin/python test_ball.py
+.venv/bin/python test_ball_size.py
 ```
 
 ## 문서
