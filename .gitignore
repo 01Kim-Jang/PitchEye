@@ -17,3 +17,7 @@ DerivedData/
 
 # 학습 결과물 (가중치는 저장소에 올리지 않는다)
 ml/runs/
+
+# Swift 패키지 빌드 결과
+.build/
+.swiftpm/
