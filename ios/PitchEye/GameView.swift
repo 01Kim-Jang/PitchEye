@@ -8,6 +8,7 @@ struct GameView: View {
     @StateObject private var capture = CaptureController()
     @StateObject private var session: GameSession
     @State private var confirmEnd = false
+    @State private var showRecords = false
 
     init(onDone: @escaping () -> Void) {
         self.onDone = onDone
@@ -38,6 +39,7 @@ struct GameView: View {
             capture.start()
         }
         .onDisappear { if capture.isRunning { capture.stop() } }
+        .sheet(isPresented: $showRecords) { LiveRecordSheet(session: session) }
         .confirmationDialog("경기를 끝낼까요?", isPresented: $confirmEnd, titleVisibility: .visible) {
             Button("경기 끝내기", role: .destructive) {
                 capture.stop()
@@ -91,6 +93,8 @@ struct GameView: View {
                 Text(session.clipStatus).font(.caption).foregroundStyle(Theme.secondaryText)
             }
 
+            Button { showRecords = true } label: { Label("이번 경기 기록", systemImage: "list.bullet.rectangle") }
+                .buttonStyle(SecondaryButtonStyle())
             Button { confirmEnd = true } label: { Label("경기 끝내기", systemImage: "stop.fill") }
                 .buttonStyle(SecondaryButtonStyle())
 
