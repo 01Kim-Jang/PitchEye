@@ -49,3 +49,12 @@ func demoJudgement() -> Judgement { Judge(zone: zone).judge(estimate(x: 0, z: 0.
     let holdsBoth = (0..<200).filter { _ in both.next(.edge).judgement.verdict == .hold }.count
     #expect(holdsBoth < holdsMain)
 }
+
+@Test func clipIsAttachedLater() {
+    var game = GameRecord()
+    game.add(judgement: demoJudgement(), isDemo: true)
+    #expect(game.pitches[0].clipFile == nil)
+    game.setClip("pitch-0001.mov", for: 1)
+    game.setClip("pitch-0009.mov", for: 9)  // 없는 번호는 무시
+    #expect(game.pitches[0].clipFile == "pitch-0001.mov")
+}

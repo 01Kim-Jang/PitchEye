@@ -201,7 +201,7 @@ extension ProcessInfo.ThermalState {
     }
 }
 
-private struct CameraPreview: UIViewRepresentable {
+struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
 
     func makeUIView(context: Context) -> PreviewView {

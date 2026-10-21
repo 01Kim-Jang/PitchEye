@@ -33,6 +33,8 @@ final class CaptureController: NSObject, ObservableObject, AVCaptureVideoDataOut
     private var videoOutput: AVCaptureVideoDataOutput?
     // 아래 셋은 frameQueue에서만 접근
     private let recorder = ClipRecorder()
+    /// 경기 모드에서 계속 녹화할 때 설정한다. 시작 전에 넣어야 한다.
+    var segmentRecorder: SegmentRecorder?
     private var wantsRecording = false
     private var clipInfo: [String: Any] = [:]
     private var pendingCheckpoints: [Double] = [] // 초 단위, main에서만 접근
@@ -66,6 +68,7 @@ final class CaptureController: NSObject, ObservableObject, AVCaptureVideoDataOut
     }
 
     func stop() {
+        segmentRecorder?.stop()
         sessionQueue.async {
             self.session.stopRunning()
             let final: FrameStats = self.frameQueue.sync {
@@ -116,6 +119,8 @@ final class CaptureController: NSObject, ObservableObject, AVCaptureVideoDataOut
             device.unlockForConfiguration()
             self.device = device
             self.videoOutput = output
+            segmentRecorder?.configure(queue: frameQueue,
+                                       settings: output.recommendedVideoSettings(forVideoCodecType: .hevc, assetWriterOutputFileType: .mov))
 
             let dims = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
             let description = "\(device.localizedName) \(dims.width)×\(dims.height) @ \(Int(DeviceProbe.maxFPS(format)))fps"
@@ -136,6 +141,7 @@ final class CaptureController: NSObject, ObservableObject, AVCaptureVideoDataOut
     // ponytail: 3초 링버퍼는 아직 없다. 녹화는 버튼을 누른 뒤부터만 저장한다. 링버퍼는 인코딩된 프레임을 보관하는 방식으로 별도 구현.
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         liveStats.add(timestamp: CMSampleBufferGetPresentationTimeStamp(sampleBuffer).seconds)
+        segmentRecorder?.append(sampleBuffer)
         if wantsRecording, !recorder.isRecording { beginClip(at: CMSampleBufferGetPresentationTimeStamp(sampleBuffer)) }
         if recorder.isRecording {
             recorder.append(sampleBuffer)
