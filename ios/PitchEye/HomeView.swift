@@ -5,6 +5,7 @@ enum Route: Hashable {
     case capture
     case settings
     case clips
+    case game
 }
 
 struct HomeView: View {
@@ -38,7 +39,7 @@ struct HomeView: View {
                 switch route {
                 case .guide(let thenCapture):
                     GuideView(showsSkip: thenCapture) {
-                        path = thenCapture ? [.capture] : []
+                        path = thenCapture ? [.game] : []
                     }
                 case .capture:
                     CaptureView { path = [] }
@@ -46,6 +47,8 @@ struct HomeView: View {
                     SettingsView()
                 case .clips:
                     ClipsView()
+                case .game:
+                    GameView { path = [] }
                 }
             }
             .alert("이 기기로는 촬영할 수 없습니다", isPresented: $showUnsupported) {
@@ -54,6 +57,15 @@ struct HomeView: View {
                 Text("1080p 240fps 촬영을 지원하는 아이폰이 필요합니다. 시뮬레이터에는 카메라가 없습니다.")
             }
         }
+    }
+
+    /// 시뮬레이터에는 카메라가 없지만, 화면과 데모 판정 흐름은 확인할 수 있게 경기 화면을 연다.
+    private static var isSimulator: Bool {
+        #if targetEnvironment(simulator)
+        true
+        #else
+        false
+        #endif
     }
 
     private var header: some View {
@@ -77,13 +89,13 @@ struct HomeView: View {
     private var buttons: some View {
         VStack(spacing: 12) {
             Button {
-                if !supported {
+                if !supported && !Self.isSimulator {
                     showUnsupported = true
                 } else {
-                    path = [showGuide ? .guide(thenCapture: true) : .capture]
+                    path = [showGuide ? .guide(thenCapture: true) : .game]
                 }
             } label: {
-                Label("촬영 시작", systemImage: "play.fill")
+                Label("경기 시작", systemImage: "play.fill")
             }
             .buttonStyle(PrimaryButtonStyle())
 

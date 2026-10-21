@@ -4,6 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @AppStorage("showGuideBeforeCapture") private var showGuide = true
     @AppStorage("maxExposureDenominator") private var maxExposure = 0
+    @AppStorage("batterHeightCm") private var batterHeightCm = 175
     private let formats = DeviceProbe.highSpeedFormats()
     private let supported = DeviceProbe.requiredFormat() != nil
 
@@ -32,6 +33,24 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(Theme.secondaryText)
                     .padding(.top, -16)
+                section("판정") {
+                    Stepper("타자 키 \(batterHeightCm)cm", value: $batterHeightCm, in: 140...210)
+                        .padding(14)
+                }
+                Text("스트라이크존 높이를 정합니다(KBO 기준: 키의 27.04%~55.75%). 타자 자세 인식이 생기기 전까지 쓰는 임시 설정입니다.")
+                    .font(.footnote)
+                    .foregroundStyle(Theme.secondaryText)
+                    .padding(.top, -16)
+                section("점검 도구") {
+                    NavigationLink(value: Route.capture) {
+                        HStack {
+                            Text("240fps 촬영 측정")
+                            Spacer()
+                            Image(systemName: "chevron.right").foregroundStyle(Theme.secondaryText)
+                        }
+                        .padding(14)
+                    }
+                }
                 section("촬영 사양") {
                     row("해상도", "\(Requirements.width)×\(Requirements.height)")
                     divider

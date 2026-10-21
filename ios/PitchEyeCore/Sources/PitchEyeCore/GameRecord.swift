@@ -38,6 +38,12 @@ public struct GameRecord: Codable, Equatable, Identifiable, Sendable {
         return record
     }
 
+    /// 투구 영상이 다 만들어진 뒤 파일 이름을 붙인다. 없는 번호면 아무것도 안 한다.
+    public mutating func setClip(_ file: String, for number: Int) {
+        guard number >= 1, number <= pitches.count else { return }
+        pitches[number - 1].clipFile = file
+    }
+
     /// 다음 투구부터 다음 회로 친다. 직전에 이미 눌렀으면(그 회에 투구가 없으면) 무시한다.
     public mutating func nextInning() {
         let next = pitches.count + 1
