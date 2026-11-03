@@ -1,0 +1,8 @@
+// 서명 설정. 팀(Apple ID)마다 다른 값은 이 파일이 아니라 Local.xcconfig에 둔다.
+// Local.xcconfig는 git에 올라가지 않는다. 처음 한 번 Local.xcconfig.example을 복사해 만든다.
+
+DEVELOPMENT_TEAM =
+PRODUCT_BUNDLE_IDENTIFIER = com.pitcheye.app
+
+// 파일이 없어도 빌드는 된다(서명 없이 시뮬레이터용 빌드 가능).
+#include? "Local.xcconfig"

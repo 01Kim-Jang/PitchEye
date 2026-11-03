@@ -1,0 +1,10 @@
+// 이 파일을 같은 폴더에 Local.xcconfig로 복사하고 값을 채운다. Local.xcconfig는 git에 올라가지 않는다.
+//
+// 팀 ID 찾기: Xcode > Settings > Accounts > 본인 Apple ID > 팀 목록의 Team ID 열
+//   (또는 키체인 접근 > 내 인증서 > "Apple Development: ..." 인증서의 조직 단위)
+// Xcode의 Signing & Capabilities 화면에서 Team을 고르지 말 것. 그러면 프로젝트 파일에 다시 기록된다.
+
+DEVELOPMENT_TEAM = ABCDE12345
+
+// 번들 ID는 Apple 계정 전체에서 유일해야 한다. 다른 사람과 겹쳐 오류가 나면 바꾼다.
+// PRODUCT_BUNDLE_IDENTIFIER = com.yourname.pitcheye
