@@ -21,3 +21,6 @@ ml/runs/
 # Swift 패키지 빌드 결과
 .build/
 .swiftpm/
+
+# 개인 서명 설정 (ios/Config/Local.xcconfig.example 참고)
+ios/Config/Local.xcconfig

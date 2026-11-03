@@ -4,9 +4,18 @@
 링버퍼와 판정은 아직 없습니다.
 
 ## 실행
-1. `PitchEye.xcodeproj`를 Xcode로 연다.
-2. Signing & Capabilities에서 Team을 본인 Apple ID로 고른다. 번들 ID가 겹치면 바꾼다. 이 변경은 커밋하지 않는다.
-3. 아이폰을 연결하고 실행한다. **시뮬레이터에는 카메라가 없어 홈·안내·설정 화면만 확인할 수 있다.**
+1. 처음 한 번, 개인 서명 설정 파일을 만든다.
+   ```bash
+   cp ios/Config/Local.xcconfig.example ios/Config/Local.xcconfig
+   ```
+   `ios/Config/Local.xcconfig`의 `DEVELOPMENT_TEAM`에 본인 팀 ID를 넣는다. 팀 ID는 Xcode > Settings > Accounts에서 본인 Apple ID의 팀 목록에 있다.
+   번들 ID가 다른 사람과 겹쳐 오류가 나면 같은 파일에서 `PRODUCT_BUNDLE_IDENTIFIER`도 바꾼다.
+   이 파일은 git에 올라가지 않는다.
+2. `PitchEye.xcodeproj`를 Xcode로 연다.
+3. **Signing & Capabilities 화면에서 Team을 고르지 않는다.** 고르면 프로젝트 파일에 팀 ID가 다시 기록되어 커밋에 섞인다. 이미 골랐다면 `git checkout ios/PitchEye.xcodeproj/project.pbxproj`로 되돌린다.
+4. 아이폰을 연결하고 실행한다. 시뮬레이터에는 카메라가 없어 경기 화면은 데모 판정만 확인할 수 있다(영상 저장 안 됨).
+
+서명 설정은 `ios/Config/Signing.xcconfig`(공용)와 `Local.xcconfig`(개인)로 나뉜다. 공용 파일은 팀 ID를 비워 두고, 개인 파일이 있으면 그 값을 덮어쓴다.
 
 ## 화면
 | 화면 | 파일 | 내용 |
