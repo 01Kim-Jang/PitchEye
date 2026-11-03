@@ -42,14 +42,9 @@ struct SettingsView: View {
                     .foregroundStyle(Theme.secondaryText)
                     .padding(.top, -16)
                 section("점검 도구") {
-                    NavigationLink(value: Route.capture) {
-                        HStack {
-                            Text("240fps 촬영 측정")
-                            Spacer()
-                            Image(systemName: "chevron.right").foregroundStyle(Theme.secondaryText)
-                        }
-                        .padding(14)
-                    }
+                    toolLink("240fps 촬영 측정", Route.capture)
+                    divider
+                    toolLink("실험 영상 (공 크기 측정 등)", Route.clips)
                 }
                 section("촬영 사양") {
                     row("해상도", "\(Requirements.width)×\(Requirements.height)")
@@ -107,6 +102,17 @@ struct SettingsView: View {
             Text(value).foregroundStyle(Theme.secondaryText).monospacedDigit()
         }
         .padding(14)
+    }
+
+    private func toolLink(_ title: String, _ route: Route) -> some View {
+        NavigationLink(value: route) {
+            HStack {
+                Text(title)
+                Spacer()
+                Image(systemName: "chevron.right").foregroundStyle(Theme.secondaryText)
+            }
+            .padding(14)
+        }
     }
 
     private var divider: some View {

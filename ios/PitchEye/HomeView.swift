@@ -6,6 +6,8 @@ enum Route: Hashable {
     case settings
     case clips
     case game
+    case records
+    case record(UUID)
 }
 
 struct HomeView: View {
@@ -49,6 +51,10 @@ struct HomeView: View {
                     ClipsView()
                 case .game:
                     GameView { path = [] }
+                case .records:
+                    GamesListView()
+                case .record(let id):
+                    StoredGameView(id: id)
                 }
             }
             .alert("이 기기로는 촬영할 수 없습니다", isPresented: $showUnsupported) {
@@ -107,9 +113,9 @@ struct HomeView: View {
             .buttonStyle(SecondaryButtonStyle())
 
             Button {
-                path = [.clips]
+                path = [.records]
             } label: {
-                Label("저장한 영상", systemImage: "film")
+                Label("경기 기록", systemImage: "list.bullet.rectangle")
             }
             .buttonStyle(SecondaryButtonStyle())
 
